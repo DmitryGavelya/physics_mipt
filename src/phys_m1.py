@@ -123,7 +123,6 @@ def main():
         ax1.grid(True, alpha=0.3)
         ax1.set_xlim(left=0)
         ax1.set_ylim(bottom=0)
-
         ax2.plot(x_quadratic, y_quadratic, 'r--', label='Квадратичное сопротивление', linewidth=2)
         ax2.set_xlabel('Расстояние, м')
         ax2.set_ylabel('Высота, м')
