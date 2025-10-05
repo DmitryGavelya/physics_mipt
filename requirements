@@ -1,4 +1,4 @@
+pygame
+sys
+math
 numpy
-scipy
-matplotlib
-pytest
