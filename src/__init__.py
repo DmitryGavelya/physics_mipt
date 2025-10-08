@@ -1,4 +1,4 @@
-from src.phys_m2 import main
+from phys_m2 import main
 
 if __name__ == "__main__":
     main()

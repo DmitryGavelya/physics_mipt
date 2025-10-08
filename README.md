@@ -137,5 +137,8 @@ $$\Delta P = |\vec{P}(t) - \vec{P}(0)|$$
 
 ## Запуск
 
-- В своей IDE можно просто нажать на большую зеленую кнопку запуска
+1) - В своей IDE можно просто нажать на большую зеленую кнопку запуска
+2) - ```python3 -m venv venv```
+- ```source venv/bin/activate```
+- ```pip3 install -r requirements.txt```
 - ```python3 __init__.py``` в нужной директории

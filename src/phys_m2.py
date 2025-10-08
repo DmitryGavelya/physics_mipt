@@ -357,16 +357,16 @@ def get_user_input():
             y = int(input("  y position (100-500): "))
             if y < 100 or y > 500:
                 raise ValueError("wrong value")
-            vx = int(input("  x velocity (-200 to 200): "))
+            vx = int(input("  x velocity (-200 to 200 cm/s): "))
             if vx < -200 or vx > 200:
                 raise ValueError("wrong value")
-            vy = int(input("  y velocity (-200 to 200): "))
+            vy = int(input("  y velocity (-200 to 200 cm/s): "))
             if vy < -200 or vy > 200:
                 raise ValueError("wrong value")
-            radius = int(input("  radius (10-40): "))
+            radius = int(input("  radius (10-40 cm): "))
             if radius < 10 or radius > 40:
                 raise ValueError("wrong value")
-            mass = int(input("  mass (5-100): "))
+            mass = int(input("  mass (5-100 gr): "))
             if mass < 5 or mass > 100:
                 raise ValueError("wrong value")
             balls.append((x, y, vx, vy, radius, mass, BALL_COLORS[i % len(BALL_COLORS)], i + 1))

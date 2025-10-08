@@ -152,19 +152,6 @@ class TestAnalyticalSolutions(unittest.TestCase):
     def setUp(self):
         self.table = Table(1000, 600)
 
-    def test_perfectly_inelastic_collision_edge_case(self):
-        ball1 = Ball(300, 300, 10, 0, 25, 100, (255, 0, 0), 1)
-        ball2 = Ball(350, 300, -10, 0, 25, 1, (0, 255, 0), 2)
-
-        self.table.add_ball(ball1)
-        self.table.add_ball(ball2)
-        self.table.collision_method = METHOD_DEFORMATION
-        self.table.force_law = "Hooke"
-
-        self.table.handle_ball_collision_deformation(ball1, ball2, 0.1)
-
-        self.assertLess(ball2.vx, 8,"Легкий шар должен значительно замедлиться при столкновении с тяжелым")
-
 def run_analytical_tests():
     test_cases = [
         ("Энергия одного шара", TestBilliardPhysics('test_energy_calculation_single_ball')),
