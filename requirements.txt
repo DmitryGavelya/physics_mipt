@@ -1,2 +1,5 @@
-pygame
-numpy
+matplotlib~=3.10.6
+numpy~=2.3.3
+dataclasses~=0.6
+typing~=3.7.4.3
+scipy~=1.16.2
