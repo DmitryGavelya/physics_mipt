@@ -2,20 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
-
-import matplotlib as mpl
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.integrate import solve_ivp
-
-mpl.style.use('fast')
-mpl.rcParams['agg.path.chunksize'] = 20000
-mpl.rcParams['path.simplify'] = True
-
-T_MIN = 0.05
-T_MAX = 5.0
-MAX_PLOT_POINTS = 1000
 
 
 @dataclass
@@ -145,7 +133,7 @@ class BallSimulator:
             total_torque += tau1
         return total_force / ball.mass, total_torque / ball.inertia
 
-    def derivatives(self, t: float, y: np.ndarray) -> np.ndarray:
+    def derivatives(self, y: np.ndarray) -> np.ndarray:
         n = len(self.balls)
         dydt = np.zeros(5 * n)
         for i, ball in enumerate(self.balls):
@@ -168,15 +156,21 @@ class BallSimulator:
             y0[5 * i:5 * i + 2] = ball.position
             y0[5 * i + 2:5 * i + 4] = ball.velocity
             y0[5 * i + 4] = ball.angular_velocity[2]
-        n_points = min(MAX_PLOT_POINTS, int((t_span[1] - t_span[0]) / dt) + 1)
-        t_eval = np.linspace(t_span[0], t_span[1], n_points)
-        sol = solve_ivp(
-            self.derivatives, t_span, y0,
-            method='RK45', t_eval=t_eval,
-            rtol=1e-5, atol=1e-8,
-            max_step=0.01
-        )
-        return SimulationResult(sol, self.balls)
+
+        t_start, t_end = t_span
+        n_steps = int((t_end - t_start) / dt) + 1
+        t_eval = np.linspace(t_start, t_end, n_steps)
+
+        y = y0.copy()
+        solution_y = np.zeros((5 * n, n_steps))
+
+        for i, t in enumerate(t_eval):
+            solution_y[:, i] = y
+            dydt = self.derivatives(y)
+            y = y + dydt * dt
+
+        solution = type('Solution', (), {'t': t_eval, 'y': solution_y})()
+        return SimulationResult(solution, self.balls)
 
 
 class SimulationResult:
@@ -205,18 +199,32 @@ class SimulationResult:
 
 def run_autotests():
     print("Запуск автотестов...")
+
     sim = BallSimulator(gravity=0.0, restitution=1.0)
     ball = Ball(0.17, 0.0285, np.array([0.0, 0.0]), np.array([2.0, 1.0]), np.array([0.0, 0.0, 0.0]))
     sim.add_ball(ball)
-    sim.simulate((0.0, 0.3), 0.005)
-    print("Тест 1 пройден: энергия сохраняется без сил контакта")
+    result = sim.simulate((0.0, 0.3), 0.005)
+    energy_start = result.get_energy()[0]
+    energy_end = result.get_energy()[-1]
+    energy_diff = abs(energy_end - energy_start)
+    if energy_diff < 0.01:
+        print("Тест 1 пройден: энергия сохраняется без сил контакта")
+    else:
+        print(f"Тест 1 не пройден: изменение энергии {energy_diff:.6f}")
+
     sim = BallSimulator(gravity=9.81, restitution=0.9)
     surface = Surface(normal=np.array([0.0, 1.0]), point=np.array([0.0, -0.5]), friction_coeff=0.5)
     sim.add_surface(surface)
     ball = Ball(0.17, 0.0285, np.array([0.0, 0.1]), np.array([3.0, 0.0]), np.array([0.0, 0.0, 0.0]))
     sim.add_ball(ball)
-    sim.simulate((0.0, 0.6), 0.005)
-    print("Тест 2 пройден: энергия уменьшается из-за трения")
+    result = sim.simulate((0.0, 0.6), 0.005)
+    energy_start = result.get_energy()[0]
+    energy_end = result.get_energy()[-1]
+    if energy_end < energy_start - 0.01:
+        print("Тест 2 пройден: энергия уменьшается из-за трения")
+    else:
+        print("Тест 2 не пройден: энергия не уменьшилась достаточно")
+
     sim = BallSimulator(gravity=0.0, restitution=0.98)
     area = SimulationArea(width=2.0, height=1.0, friction_coeff=0.0)
     sim.set_area(area)
@@ -224,8 +232,14 @@ def run_autotests():
     b2 = Ball(0.17, 0.0285, np.array([0.1, 0.0]), np.array([-1.0, 0.0]), np.array([0.0, 0.0, 0.0]))
     sim.add_ball(b1)
     sim.add_ball(b2)
-    sim.simulate((0.0, 0.2), 0.001)
-    print("Тест 3 пройден: столкновение шаров моделируется")
+    result = sim.simulate((0.0, 0.2), 0.001)
+    pos1_final = result.balls_data[0]['position'][-1]
+    pos2_final = result.balls_data[1]['position'][-1]
+    if abs(pos1_final[0]) > 0.15 or abs(pos2_final[0]) > 0.15:
+        print("Тест 3 пройден: столкновение шаров моделируется")
+    else:
+        print("Тест 3 не пройден: шары не изменили траекторию")
+
     print("\nВсе автотесты пройдены")
 
 
@@ -251,6 +265,7 @@ def create_inclined_plane_simulation(angle: float = 30.0, mu: float = 0.3, y0: f
 
 
 def create_horizontal_surface_simulation(n_balls: int = 2) -> BallSimulator:
+    import matplotlib.colors as mcolors
     sim = BallSimulator(gravity=9.81, restitution=0.98)
     area = SimulationArea(width=1.8, height=0.9, friction_coeff=0.2)
     sim.set_area(area)
@@ -264,11 +279,13 @@ def create_horizontal_surface_simulation(n_balls: int = 2) -> BallSimulator:
 
 
 def create_elastic_collisions_simulation(restitution: float = 0.98) -> BallSimulator:
+    import matplotlib.colors as mcolors
     sim = BallSimulator(gravity=0.0, restitution=restitution)
     area = SimulationArea(width=2.0, height=1.0, friction_coeff=0.0)
     sim.set_area(area)
-    b1 = Ball(1.0, 0.04, np.array([-0.5, 0.0]), np.array([1.5, 0.0]), np.array([0.0, 0.0, 0.0]), "blue")
-    b2 = Ball(1.0, 0.04, np.array([0.5, 0.0]), np.array([-1.0, 0.0]), np.array([0.0, 0.0, 0.0]), "green")
+    colors = list(mcolors.TABLEAU_COLORS.values())
+    b1 = Ball(1.0, 0.04, np.array([-0.5, 0.0]), np.array([1.5, 0.0]), np.array([0.0, 0.0, 0.0]), colors[0])
+    b2 = Ball(1.0, 0.04, np.array([0.5, 0.0]), np.array([-1.0, 0.0]), np.array([0.0, 0.0, 0.0]), colors[1])
     sim.add_ball(b1)
     sim.add_ball(b2)
     return sim
@@ -326,10 +343,8 @@ def validate_vector_input(prompt: str, default: List[float]) -> np.ndarray:
 
 
 def plot_simulation(result: SimulationResult):
-    n = len(result.t)
-    stride = max(1, n // MAX_PLOT_POINTS)
-    idx = np.arange(0, n, stride)
     plt.figure(figsize=(12, 5))
+
     ax1 = plt.subplot(1, 2, 1)
     ax1.set_xlim(-1.2, 1.2)
     ax1.set_ylim(-0.8, 0.8)
@@ -337,21 +352,23 @@ def plot_simulation(result: SimulationResult):
     ax1.grid(True, alpha=0.3)
     ax1.set_xlabel('X (м)')
     ax1.set_ylabel('Y (м)')
-    ax1.set_title('Траектории движения')
-    colors = [ball.color for ball in result.balls]
-    for i, color in enumerate(colors):
-        tr = result.balls_data[i]['position'][idx]
-        ax1.plot(tr[:, 0], tr[:, 1], '-', color=color, linewidth=2, antialiased=False, label=f'Шар {i + 1}')
-        ax1.plot(tr[0, 0], tr[0, 1], 'o', color=color, markersize=6)
-        ax1.plot(tr[-1, 0], tr[-1, 1], 's', color=color, markersize=6)
-    ax1.legend(loc='upper right', frameon=False)
+    ax1.set_title('Траектории движения (центр шара)')
+
+    for i, ball in enumerate(result.balls):
+        trajectory = result.balls_data[i]['position']
+        ax1.plot(trajectory[:, 0], trajectory[:, 1], '-', color=ball.color, linewidth=2, label=f'Шар {i + 1}')
+        ax1.plot(trajectory[0, 0], trajectory[0, 1], 'o', color=ball.color, markersize=8, markeredgecolor='black')
+        ax1.plot(trajectory[-1, 0], trajectory[-1, 1], 's', color=ball.color, markersize=8, markeredgecolor='black')
+    ax1.legend()
+
     ax2 = plt.subplot(1, 2, 2)
-    energy = result.get_energy()[idx]
-    ax2.plot(result.t[idx], energy, 'b-', linewidth=2, antialiased=False)
+    energy = result.get_energy()
+    ax2.plot(result.t, energy, 'b-', linewidth=2)
     ax2.set_xlabel('Время (с)')
     ax2.set_ylabel('Энергия (Дж)')
     ax2.set_title('Полная энергия системы')
     ax2.grid(True, alpha=0.3)
+
     plt.tight_layout()
     plt.show()
 
@@ -361,6 +378,7 @@ def choose_and_run_scenario():
     DT_INC = 0.002
     DT_HOR = 0.002
     DT_ELA = 0.0005
+
     print("\nВыберите сценарий:")
     print("1. Скатывание по наклонной плоскости")
     print("2. Качение по горизонтальной плоскости")
@@ -369,8 +387,8 @@ def choose_and_run_scenario():
 
     def ask_time(default_T: float) -> float:
         return validate_float_input(
-            f"Время моделирования [{default_T:.2f}] (сек, {T_MIN}-{T_MAX}): ",
-            default_T, T_MIN, T_MAX
+            f"Время моделирования [{default_T:.2f}] (сек, 0.05-5.0): ",
+            default_T, 0.05, 5.0
         )
 
     if choice == "1":
@@ -382,7 +400,9 @@ def choose_and_run_scenario():
         sim = create_inclined_plane_simulation(angle, mu, y0, radius)
         result = sim.simulate((0.0, T), DT_INC)
         plot_simulation(result)
+
     elif choice == "2":
+        import matplotlib.colors as mcolors
         n_balls = validate_int_input("Количество шаров [2]: ", 2, 1, 6)
         sim = BallSimulator(gravity=9.81, restitution=0.98)
         area_w = validate_float_input("Ширина области [1.8]: ", 1.8, 0.5, 6.0)
@@ -401,7 +421,9 @@ def choose_and_run_scenario():
         T = ask_time(T_DEFAULT)
         result = sim.simulate((0.0, T), DT_HOR)
         plot_simulation(result)
+
     else:
+        import matplotlib.colors as mcolors
         e = validate_float_input("Коэффициент восстановления [0.98]: ", 0.98, 0.0, 1.0)
         sim = BallSimulator(gravity=0.0, restitution=e)
         area_w = validate_float_input("Ширина области [2.0]: ", 2.0, 0.5, 6.0)
@@ -424,6 +446,7 @@ def main():
     print("МОДЕЛИРОВАНИЕ КАЧЕНИЯ ШАРОВ")
     run_autotests()
     choose_and_run_scenario()
+
 
 if __name__ == "__main__":
     main()
