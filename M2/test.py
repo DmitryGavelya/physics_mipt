@@ -174,3 +174,6 @@ def run_analytical_tests():
         result = runner.run(suite)
         if not result.wasSuccessful():
             raise ValueError("wrong answer")
+
+if __name__ == '__main__':
+    run_analytical_tests()
