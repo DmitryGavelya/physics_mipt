@@ -8,11 +8,11 @@ warnings.filterwarnings("ignore")
 print("Gas Simulation Parameters")
 while True:
     try:
-        N_input = input("Enter number of particles (10-2000) [default=500]: ").strip()
+        N_input = input("Enter number of particles (50-2000) [default=500]: ").strip()
         N = 500 if N_input == "" else int(N_input)
-        if 10 <= N <= 2000:
+        if 50 <= N <= 2000:
             break
-        print("Number must be between 10 and 2000")
+        print("Number must be between 50 and 2000")
     except ValueError:
         print("Invalid input. Please enter a number.")
 
