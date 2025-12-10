@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ideal Gas Simulator</title>
+    <style>
+        :root {
+            --color-bg: #0f172a;
+            --color-text: #e2e8f0;
+            --color-primary: #3b82f6;
+            --color-accent: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        input[type="number"],
+        input[type="range"],
+        select {
+            padding: 8px 12px;
+            background: #334155;
+            border: 1px solid #475569;
+            color: var(--color-text);
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:active {
+            background: #1d4ed8;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.25);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            transform: translateY(-1px);
+        }
+
+        button {
+            transition: all 0.2s ease;
+        }
+
+        small {
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        canvas {
+            background: #0f172a;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+            height: 600px;
+        }
+
+        .stats-panel {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--color-accent);
+            font-family: 'Courier New', monospace;
+        }
+
+        .stat-unit {
+            font-size: 0.8em;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .info-panel {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            margin-bottom: 20px;
+        }
+
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+        }
+
+        .info-text {
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+
+        .test-results {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+        }
+
+        .test-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-primary);
+        }
+
+        .test-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #0f172a;
+            border-left: 3px solid #475569;
+            border-radius: 4px;
+        }
+
+        .test-pass {
+            border-left-color: var(--color-accent);
+        }
+
+        .test-fail {
+            border-left-color: #ef4444;
+        }
+
+        .test-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .test-detail {
+            font-size: 0.85em;
+            color: #94a3b8;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚛️ Симулятор идеального газа M7B</h1>
+        <p class="subtitle">Молекулярная динамика с упругими столкновениями</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Количество частиц</label>
+                <input type="number" id="particleCount" value="150" min="10" max="500">
+                <small id="particleError" style="color: #ef4444; display: none;">10-500 частиц</small>
+            </div>
+            <div class="control-group">
+                <label>Температура (К)</label>
+                <input type="number" id="temperature" value="300" min="100" max="1000" step="50">
+                <small id="tempError" style="color: #ef4444; display: none;">100-1000 К</small>
+            </div>
+            <div class="control-group">
+                <label>Размер контейнера (м)</label>
+                <input type="number" id="containerSize" value="2.0" min="1" max="5" step="0.5">
+                <small id="containerError" style="color: #ef4444; display: none;">1-5 м</small>
+            </div>
+            <div class="control-group">
+                <label>Радиус частицы (мм)</label>
+                <input type="number" id="particleRadius" value="5" min="1" max="20" step="0.5">
+                <small id="radiusError" style="color: #ef4444; display: none;">1-20 мм</small>
+            </div>
+            <div class="control-group">
+                <label>Скорость симуляции: <strong id="speedValue">1.0x</strong></label>
+                <input type="range" id="simSpeed" value="1" min="0.1" max="10" step="0.1">
+            </div>
+            <div class="control-group">
+                <label>Сценарий</label>
+                <select id="scenario">
+                    <option value="equilibrium">Равновесие</option>
+                    <option value="separated">Две области</option>
+                    <option value="hotSpot">Горячее пятно</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="initSimulation()" class="btn-primary">▶ Запуск</button>
+                <button onclick="togglePause()" class="btn-secondary">⏸ Пауза</button>
+                <button onclick="runTests()" class="btn-secondary">✓ Тесты</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="stats-panel">
+                <div class="stat">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="time">0.000</div>
+                    <div class="stat-unit">seconds</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Temperature</div>
+                    <div class="stat-value" id="tempValue">300</div>
+                    <div class="stat-unit">K</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Pressure</div>
+                    <div class="stat-value" id="pressureValue">101</div>
+                    <div class="stat-unit">kPa</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Avg velocity</div>
+                    <div class="stat-value" id="velValue">450</div>
+                    <div class="stat-unit">m/s</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Collisions</div>
+                    <div class="stat-value" id="collisionCount">0</div>
+                    <div class="stat-unit">total</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">FPS</div>
+                    <div class="stat-value" id="fpsValue">0</div>
+                    <div class="stat-unit">frame/s</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="testResults" class="test-results" style="display: none;">
+            <div class="test-title">✓ Test Results</div>
+            <div id="testList"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let simulation = null;
+        let isPaused = false;
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+        let stats = {
+            collisionCount: 0,
+            time: 0
+        };
+        let pythonRunning = false;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, vx, vy, radius = 5, mass = 1) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.radius = radius;
+                this.mass = mass;
+            }
+
+            update(dt, containerWidth, containerHeight) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                const x0 = this.radius;
+                const x1 = containerWidth - this.radius;
+                const y0 = this.radius;
+                const y1 = containerHeight - this.radius;
+
+                if (this.x < x0) {
+                    this.x = x0;
+                    this.vx = Math.abs(this.vx);
+                }
+                if (this.x > x1) {
+                    this.x = x1;
+                    this.vx = -Math.abs(this.vx);
+                }
+                if (this.y < y0) {
+                    this.y = y0;
+                    this.vy = Math.abs(this.vy);
+                }
+                if (this.y > y1) {
+                    this.y = y1;
+                    this.vy = -Math.abs(this.vy);
+                }
+            }
+
+            getSpeed() {
+                return Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            }
+
+            draw(ctx, scale) {
+                ctx.beginPath();
+                ctx.arc(this.x * scale, this.y * scale, this.radius * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.strokeStyle = '#1e40af';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        class GasSimulation {
+            constructor(n, containerSize, temperature, particleRadius) {
+                this.n = n;
+                this.containerSize = containerSize;
+                this.particleRadius = particleRadius / 1000;
+                this.particles = [];
+                this.time = 0;
+                this.dt = 0.0001;
+                this.k_B = 1.380649e-23;
+                this.m = 1e-26;
+                this.collisionCount = 0;
+                this.wallCollisions = 0;
+
+                this.initParticles(temperature);
+            }
+
+            initParticles(temperature) {
+                this.particles = [];
+                const v0 = Math.sqrt(3 * this.k_B * temperature / this.m);
+
+                const cols = Math.ceil(Math.sqrt(this.n));
+                const spacing = this.containerSize / (cols + 1);
+
+                for (let i = 0; i < this.n; i++) {
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const x = (col + 1) * spacing + (Math.random() - 0.5) * spacing * 0.2;
+                    const y = (row + 1) * spacing + (Math.random() - 0.5) * spacing * 0.2;
+
+                    const angle = Math.random() * 2 * Math.PI;
+                    const speed = v0 * (0.5 + Math.random());
+                    const vx = speed * Math.cos(angle);
+                    const vy = speed * Math.sin(angle);
+
+                    this.particles.push(new Particle(x, y, vx, vy, this.particleRadius, this.m));
+                }
+            }
+
+            initScenario(type) {
+                if (type === 'separated') {
+                    const mid = this.containerSize / 2;
+                    for (let i = 0; i < this.particles.length; i++) {
+                        if (i % 2 === 0) {
+                            this.particles[i].x = Math.random() * (mid - 2 * this.particleRadius) + this.particleRadius;
+                        } else {
+                            this.particles[i].x = Math.random() * (mid - 2 * this.particleRadius) + mid + this.particleRadius;
+                        }
+                    }
+                } else if (type === 'hotSpot') {
+                    const centerX = this.containerSize / 2;
+                    const centerY = this.containerSize / 2;
+                    for (let i = 0; i < this.particles.length; i++) {
+                        const r = Math.random() * 0.3;
+                        const angle = Math.random() * 2 * Math.PI;
+                        this.particles[i].x = centerX + r * Math.cos(angle);
+                        this.particles[i].y = centerY + r * Math.sin(angle);
+
+                        if (i < this.particles.length / 3) {
+                            this.particles[i].vx *= 2;
+                            this.particles[i].vy *= 2;
+                        }
+                    }
+                }
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.particles.length; i++) {
+                    for (let j = i + 1; j < this.particles.length; j++) {
+                        this.checkParticleCollision(i, j);
+                    }
+                }
+            }
+
+            checkParticleCollision(i, j) {
+                const p1 = this.particles[i];
+                const p2 = this.particles[j];
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = p1.radius + p2.radius;
+
+                if (dist < minDist + 1e-6) {
+                    const dvx = p2.vx - p1.vx;
+                    const dvy = p2.vy - p1.vy;
+                    const dvDot = dvx * dx + dvy * dy;
+
+                    if (dvDot >= 0) return;
+
+                    const factor = 2 / (p1.mass + p2.mass);
+                    const massRatio1 = p1.mass * factor;
+                    const massRatio2 = p2.mass * factor;
+
+                    const denom = dist * dist;
+                    const dot = dvDot / denom;
+
+                    p1.vx += massRatio2 * dot * dx;
+                    p1.vy += massRatio2 * dot * dy;
+                    p2.vx -= massRatio1 * dot * dx;
+                    p2.vy -= massRatio1 * dot * dy;
+
+                    const overlap = (minDist - dist) / 2 + 1e-6;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    p1.x -= nx * overlap;
+                    p1.y -= ny * overlap;
+                    p2.x += nx * overlap;
+                    p2.y += ny * overlap;
+
+                    this.collisionCount++;
+                }
+            }
+
+            step() {
+                for (let p of this.particles) {
+                    p.update(this.dt, this.containerSize, this.containerSize);
+                }
+
+                this.checkCollisions();
+                this.time += this.dt;
+            }
+
+            getTemperature() {
+                let avgV2 = 0;
+                for (let p of this.particles) {
+                    const v2 = p.vx * p.vx + p.vy * p.vy;
+                    avgV2 += v2;
+                }
+                avgV2 /= this.particles.length;
+                return (this.m * avgV2) / (3 * this.k_B);
+            }
+
+            getPressure() {
+                const v2Sum = this.particles.reduce((sum, p) => sum + p.vx * p.vx + p.vy * p.vy, 0);
+                const avgV2 = v2Sum / this.particles.length;
+                const pressure = (this.n / (this.containerSize * this.containerSize)) * this.m * avgV2 / 3;
+                return pressure / 1000;
+            }
+
+            getAverageVelocity() {
+                let vSum = 0;
+                for (let p of this.particles) {
+                    vSum += p.getSpeed();
+                }
+                return vSum / this.particles.length;
+            }
+        }
+
+        function validateInputs() {
+            const n = parseInt(document.getElementById('particleCount').value);
+            const temp = parseFloat(document.getElementById('temperature').value);
+            const size = parseFloat(document.getElementById('containerSize').value);
+            const radius = parseFloat(document.getElementById('particleRadius').value);
+
+            let isValid = true;
+
+            if (n < 10 || n > 500 || isNaN(n)) {
+                document.getElementById('particleError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('particleError').style.display = 'none';
+            }
+
+            if (temp < 100 || temp > 1000 || isNaN(temp)) {
+                document.getElementById('tempError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('tempError').style.display = 'none';
+            }
+
+            if (size < 1 || size > 5 || isNaN(size)) {
+                document.getElementById('containerError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('containerError').style.display = 'none';
+            }
+
+            if (radius < 1 || radius > 20 || isNaN(radius)) {
+                document.getElementById('radiusError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('radiusError').style.display = 'none';
+            }
+
+            if (isValid && size * 1000 < radius * 5) {
+                document.getElementById('containerError').style.display = 'block';
+                document.getElementById('containerError').textContent = 'Контейнер слишком мал для частиц';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function initSimulation() {
+            if (!validateInputs()) {
+                return;
+            }
+
+            const n = parseInt(document.getElementById('particleCount').value);
+            const temp = parseFloat(document.getElementById('temperature').value);
+            const size = parseFloat(document.getElementById('containerSize').value);
+            const radius = parseFloat(document.getElementById('particleRadius').value);
+            const scenario = document.getElementById('scenario').value;
+
+            simulation = new GasSimulation(n, size, temp, radius);
+            simulation.initScenario(scenario);
+            stats.collisionCount = 0;
+            stats.time = 0;
+            lastTime = performance.now();
+
+            animate();
+        }
+
+        function animate() {
+            const now = performance.now();
+            const elapsed = (now - lastTime) / 1000;
+            lastTime = now;
+
+            frameCount++;
+            if (frameCount % 30 === 0) {
+                fps = Math.round(1 / (elapsed / 30));
+            }
+
+            if (!isPaused && simulation) {
+                const speed = parseFloat(document.getElementById('simSpeed').value);
+                for (let i = 0; i < Math.max(1, Math.round(speed * 5)); i++) {
+                    simulation.step();
+                }
+                stats.collisionCount = simulation.collisionCount;
+                stats.time = simulation.time;
+            }
+
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (simulation) {
+                const scale = canvas.width / simulation.containerSize;
+
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                for (let p of simulation.particles) {
+                    p.draw(ctx, scale);
+                }
+
+                const temp = simulation.getTemperature();
+                const pressure = simulation.getPressure();
+                const avgVel = simulation.getAverageVelocity();
+
+                document.getElementById('time').textContent = stats.time.toFixed(3);
+                document.getElementById('tempValue').textContent = Math.round(temp);
+                document.getElementById('pressureValue').textContent = Math.round(pressure);
+                document.getElementById('velValue').textContent = Math.round(avgVel);
+                document.getElementById('collisionCount').textContent = stats.collisionCount;
+                document.getElementById('fpsValue').textContent = fps;
+                document.getElementById('speedValue').textContent = 
+                    parseFloat(document.getElementById('simSpeed').value).toFixed(1) + 'x';
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function resetStats() {
+            if (simulation) {
+                stats.collisionCount = 0;
+                simulation.collisionCount = 0;
+            }
+        }
+
+        function runTests() {
+            const results = [];
+
+            if (!simulation) {
+                results.push({
+                    name: 'Simulation exists',
+                    pass: false,
+                    detail: 'Start simulation first'
+                });
+                displayTests(results);
+                return;
+            }
+
+            results.push({
+                name: 'Проверка количества частиц',
+                pass: simulation.particles.length === simulation.n,
+                detail: `Ожидается ${simulation.n}, получено ${simulation.particles.length}`
+            });
+
+            let allInBounds = true;
+            for (let p of simulation.particles) {
+                if (p.x < p.radius || p.x > simulation.containerSize - p.radius ||
+                    p.y < p.radius || p.y > simulation.containerSize - p.radius) {
+                    allInBounds = false;
+                    break;
+                }
+            }
+            results.push({
+                name: 'Частицы в пределах контейнера',
+                pass: allInBounds,
+                detail: allInBounds ? 'Все частицы в порядке' : 'Выход за границы'
+            });
+
+            let noOverlap = true;
+            for (let i = 0; i < simulation.particles.length; i++) {
+                for (let j = i + 1; j < simulation.particles.length; j++) {
+                    const p1 = simulation.particles[i];
+                    const p2 = simulation.particles[j];
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < p1.radius + p2.radius - 1e-5) {
+                        noOverlap = false;
+                        break;
+                    }
+                }
+                if (!noOverlap) break;
+            }
+            results.push({
+                name: 'Отсутствие пересечений',
+                pass: noOverlap,
+                detail: noOverlap ? 'Правильный интервал' : 'Обнаружены пересечения'
+            });
+
+            const temp = simulation.getTemperature();
+            results.push({
+                name: 'Расчёт температуры',
+                pass: temp > 0,
+                detail: `T = ${temp.toFixed(2)} К`
+            });
+
+            const pressure = simulation.getPressure();
+            results.push({
+                name: 'Расчёт давления',
+                pass: pressure > 0,
+                detail: `P = ${pressure.toFixed(2)} кПа`
+            });
+
+            let velValid = true;
+            for (let p of simulation.particles) {
+                const v = p.getSpeed();
+                if (isNaN(v) || !isFinite(v)) {
+                    velValid = false;
+                    break;
+                }
+            }
+            results.push({
+                name: 'Валидность скоростей',
+                pass: velValid,
+                detail: velValid ? 'Все скорости конечны' : 'Невалидные значения'
+            });
+
+            let totalEnergy = 0;
+            for (let p of simulation.particles) {
+                const v2 = p.vx * p.vx + p.vy * p.vy;
+                totalEnergy += 0.5 * p.mass * v2;
+            }
+            results.push({
+                name: 'Сохранение энергии',
+                pass: totalEnergy > 0 && isFinite(totalEnergy),
+                detail: `Полная энергия = ${totalEnergy.toExponential(2)} Дж`
+            });
+
+            const avgVel = simulation.getAverageVelocity();
+            results.push({
+                name: 'Средняя скорость',
+                pass: avgVel > 0 && avgVel < 2000,
+                detail: `v_cp = ${avgVel.toFixed(2)} м/с`
+            });
+
+
+            const containerVolume = simulation.containerSize * simulation.containerSize;
+            const numberDensity = simulation.n / containerVolume;
+            const expectedPressure = numberDensity * 1.380649e-23 * temp;
+            const pressureRatio = Math.abs(pressure * 1000 - expectedPressure) / expectedPressure;
+            results.push({
+                name: 'Закон идеального газа (PV=NkT)',
+                pass: pressureRatio < 0.5,
+                detail: `Отклонение: ${(pressureRatio * 100).toFixed(1)}%`
+            });
+
+            displayTests(results);
+        }
+
+        function displayTests(results) {
+            const testDiv = document.getElementById('testResults');
+            const listDiv = document.getElementById('testList');
+            listDiv.innerHTML = '';
+
+            for (let test of results) {
+                const item = document.createElement('div');
+                item.className = `test-item ${test.pass ? 'test-pass' : 'test-fail'}`;
+                item.innerHTML = `
+                    <div class="test-name">${test.pass ? '✓' : '✗'} ${test.name}</div>
+                    <div class="test-detail">${test.detail}</div>
+                `;
+                listDiv.appendChild(item);
+            }
+
+            testDiv.style.display = 'block';
+        }
+
+        document.getElementById('simSpeed').addEventListener('input', (e) => {
+            document.getElementById('speedValue').textContent = 
+                parseFloat(e.target.value).toFixed(1) + 'x';
+        });
+
+        
+        // Функция сброса всех параметров
+        function resetSimulation() {
+            // Сбросить значения input
+            document.getElementById('particleCount').value = 150;
+            document.getElementById('temperature').value = 300;
+            document.getElementById('containerSize').value = 2.0;
+            document.getElementById('particleRadius').value = 5;
+            document.getElementById('simSpeed').value = 1;
+            document.getElementById('speedValue').textContent = '1.0x';
+            document.getElementById('scenario').selectedIndex = 0;
+
+            // Очистить canvas
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Сбросить статистику
+            document.getElementById('timeValue').textContent = '0.000';
+            document.getElementById('tempValue').textContent = '300';
+            document.getElementById('pressureValue').textContent = '101';
+            document.getElementById('velocityValue').textContent = '450';
+            document.getElementById('collisionsValue').textContent = '0';
+            document.getElementById('fpsValue').textContent = '0';
+
+            // Сбросить симуляцию
+            isRunning = false;
+            particles = [];
+            time = 0;
+            collisionCount = 0;
+
+            validateInputs();
+        }
+
+        // Обработчик для ограничения decimal чисел
+        function limitDecimalPlaces(inputElement, maxDecimalPlaces) {
+            inputElement.addEventListener('input', function() {
+                let value = this.value;
+
+                // Если значение содержит точку
+                if (value.includes('.')) {
+                    const parts = value.split('.');
+
+                    // Если после точки больше знаков - обрезать
+                    if (parts[1].length > maxDecimalPlaces) {
+                        this.value = parts[0] + '.' + parts[1].substring(0, maxDecimalPlaces);
+                    }
+                }
+
+                // Также обновить отображение значения если это нужно
+                validateInputs();
+            });
+        }
+
+        // Привязать обработчик reset кнопке
+        document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+
+        // Установить ограничения decimal для полей с числами с точкой
+        limitDecimalPlaces(document.getElementById('containerSize'), 3);  // макс 3 знака
+        limitDecimalPlaces(document.getElementById('particleRadius'), 3);  // макс 3 знака
+
+        
+        ['particleCount', 'temperature', 'containerSize', 'particleRadius'].forEach(id => {
+            document.getElementById(id).addEventListener('input', validateInputs);
+        });
+    </script>
+</body>
+</html>
