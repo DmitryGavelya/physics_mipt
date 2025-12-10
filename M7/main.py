@@ -213,3 +213,6 @@ print(f"Relative change:      {abs(total_energy - initial_energy) / initial_ener
 print(f"Average kinetic energy per particle: {np.mean(KE):.4f}")
 print(f"Temperature parameter (kT): {kT:.4f}")
 print(f"Mean height: {np.mean(y_positions):.4f}")
+
+if __name__ == "__main__":
+    main()
