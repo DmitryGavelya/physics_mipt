@@ -34,7 +34,7 @@ $$\mathbf{A} \, \vec{q} = \vec{\varphi}$$
 
 $$
 A_{ij} = \begin{cases}
-\dfrac{1}{4\pi\varepsilon_0 \, r_{ij}}, & i \neq j \\[6pt]
+\dfrac{1}{4\pi\varepsilon_0 \, r_{ij}}, & i \neq j \\
 \dfrac{1}{4\pi\varepsilon_0 \, r_{\text{self},i}}, & i = j
 \end{cases}
 $$
