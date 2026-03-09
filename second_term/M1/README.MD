@@ -32,7 +32,12 @@ $$\mathbf{A} \, \vec{q} = \vec{\varphi}$$
 
 где матрица коэффициентов влияния:
 
-$$A_{ij} = \begin{cases} \dfrac{1}{4\pi\varepsilon_0 \, r_{ij}}, & i \neq j \\[6pt] \dfrac{1}{4\pi\varepsilon_0 \, r_{\text{self},i}}, & i = j \end{cases}$$
+$$
+A_{ij} = \begin{cases}
+\dfrac{1}{4\pi\varepsilon_0 \, r_{ij}}, & i \neq j \\[6pt]
+\dfrac{1}{4\pi\varepsilon_0 \, r_{\text{self},i}}, & i = j
+\end{cases}
+$$
 
 Диагональный элемент $A_{ii}$ учитывает собственный потенциал элемента (самовлияние); для квадратного элемента со стороной $a$ он приближённо равен:
 
