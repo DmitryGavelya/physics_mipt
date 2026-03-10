@@ -2,6 +2,7 @@ import numpy as np
 import scipy.linalg as la
 import matplotlib.pyplot as plt
 import sys
+import unittest
 
 EPSILON_0 = 8.8541878128e-12
 
@@ -76,11 +77,9 @@ def build_system(L, d, V, N):
 def solve_problem(L, d, V, N):
     A, phi, centers, s = build_system(L, d, V, N)
     q = la.solve(A, phi)
-
     q1 = np.sum(q[:N * N])
     c_num = abs(q1 / V)
     c_theory = EPSILON_0 * L * L / d
-
     return q, centers, s, c_num, c_theory
 
 def compute_field_slice(centers, q, L, d):
@@ -146,6 +145,9 @@ def main():
     if d >= L:
         print("Предупреждение: d >= L, модель остаётся вычислимой, но режим уже мало похож на обычный плоский конденсатор")
 
+    mem_mb = estimate_matrix_memory_mb(N)
+    print(f"Оценка памяти под матрицу: {mem_mb:.2f} МБ")
+
     try:
         q, centers, s, c_num, c_theory = solve_problem(L, d, V, N)
     except MemoryError:
@@ -166,9 +168,103 @@ def main():
 
     plot_results(q, centers, s, L, d, V, N)
 
+class TestElectrostatics(unittest.TestCase):
+    def test_estimate_matrix_memory_mb(self):
+        self.assertAlmostEqual(estimate_matrix_memory_mb(1), 32 / (1024 ** 2), places=12)
+
+    def test_build_system_shapes(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 3
+        A, phi, centers, s = build_system(L, d, V, N)
+        m = 2 * N * N
+        self.assertEqual(A.shape, (m, m))
+        self.assertEqual(phi.shape, (m,))
+        self.assertEqual(centers.shape, (m, 3))
+        self.assertAlmostEqual(s, (L / N) ** 2)
+
+    def test_phi_values(self):
+        L = 1.0
+        d = 0.2
+        V = 2.0
+        N = 2
+        A, phi, centers, s = build_system(L, d, V, N)
+        np.testing.assert_allclose(phi[:N * N], np.full(N * N, V / 2))
+        np.testing.assert_allclose(phi[N * N:], np.full(N * N, -V / 2))
+
+    def test_matrix_symmetry(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 2
+        A, phi, centers, s = build_system(L, d, V, N)
+        np.testing.assert_allclose(A, A.T, rtol=1e-12, atol=1e-12)
+
+    def test_diagonal_positive(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 2
+        A, phi, centers, s = build_system(L, d, V, N)
+        self.assertTrue(np.all(np.diag(A) > 0))
+
+    def test_total_charge_opposite_signs(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 3
+        q, centers, s, c_num, c_theory = solve_problem(L, d, V, N)
+        q1 = np.sum(q[:N * N])
+        q2 = np.sum(q[N * N:])
+        self.assertGreater(q1, 0.0)
+        self.assertLess(q2, 0.0)
+        self.assertAlmostEqual(q1 + q2, 0.0, delta=abs(q1) * 1e-8 + 1e-20)
+
+    def test_capacitance_positive(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 3
+        q, centers, s, c_num, c_theory = solve_problem(L, d, V, N)
+        self.assertGreater(c_num, 0.0)
+        self.assertGreater(c_theory, 0.0)
+
+    def test_theory_formula(self):
+        L = 2.0
+        d = 0.5
+        expected = EPSILON_0 * L * L / d
+        _, _, _, _, c_theory = solve_problem(L, d, 1.0, 2)
+        self.assertAlmostEqual(c_theory, expected, places=20)
+
+    def test_field_shapes(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 2
+        q, centers, s, c_num, c_theory = solve_problem(L, d, V, N)
+        x_eval, z_eval, Ex, Ez = compute_field_slice(centers, q, L, d)
+        self.assertEqual(Ex.shape, Ez.shape)
+        self.assertEqual(Ex.shape, (60, 60))
+        self.assertEqual(len(x_eval), 60)
+        self.assertEqual(len(z_eval), 60)
+
+    def test_solution_contains_finite_values(self):
+        L = 1.0
+        d = 0.2
+        V = 1.0
+        N = 3
+        q, centers, s, c_num, c_theory = solve_problem(L, d, V, N)
+        self.assertTrue(np.all(np.isfinite(q)))
+        self.assertTrue(np.isfinite(c_num))
+        self.assertTrue(np.isfinite(c_theory))
+
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nПрограмма остановлена пользователем")
-        sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "test":
+        unittest.main(argv=[sys.argv[0]])
+    else:
+        try:
+            main()
+        except KeyboardInterrupt:
+            print("\nПрограмма остановлена пользователем")
+            sys.exit(0)
