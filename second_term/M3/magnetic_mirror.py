@@ -1,7 +1,35 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import ellipk, ellipe
 from scipy.constants import mu_0, e, m_p
+
+
+def get_float_input(prompt, default, min_val, max_val):
+    while True:
+        val = input(prompt).strip()
+        if not val:
+            return default
+        try:
+            val_float = float(val)
+            if min_val <= val_float <= max_val:
+                return val_float
+            print(f"Ошибка: значение должно быть в диапазоне от {min_val} до {max_val}.")
+        except ValueError:
+            print("Ошибка: введите корректное число.")
+
+
+def get_user_input():
+    print("=== Настройка параметров магнитной пробки ===")
+    print("Введите значения или нажмите Enter для использования значений по умолчанию.\n")
+
+    R = get_float_input("Радиус кольца R [м] (по умолчанию 1.0): ", 1.0, 0.01, 100.0)
+    d = get_float_input("Расстояние между кольцами d [м] (по умолчанию 2.0): ", 2.0, 0.01, 100.0)
+    I = get_float_input("Ток в кольце I [А] (по умолчанию 5e6): ", 5e6, 1.0, 1e10)
+    v_total = get_float_input("Начальная скорость частицы v0 [м/с] (по умолчанию 1.5e6): ", 1.5e6, 1e3, 3e8)
+
+    print("\nЗапуск моделирования...\n")
+    return R, d, I, v_total
 
 
 class MagneticMirror:
@@ -67,15 +95,19 @@ class ParticleSimulation:
         return Y + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
-def run_scenarios():
-    trap = MagneticMirror(R=1.0, d=2.0, I=5e6)
+def run_scenarios(R, d, I, v_total):
+    trap = MagneticMirror(R=R, d=d, I=I)
     sim = ParticleSimulation(trap)
 
     B_min = trap.get_field_magnitude(0, 0, 0)
     B_max = trap.get_field_magnitude(0, 0, trap.d / 2)
+
+    if B_max <= B_min:
+        print("Ошибка: с заданными параметрами магнитная пробка не формируется (B_max <= B_min).")
+        sys.exit(1)
+
     alpha_loss = np.arcsin(np.sqrt(B_min / B_max))
 
-    v_total = 1.5e6
     T_L = 2 * np.pi * m_p / (e * B_min)
     dt = T_L / 50.0
     t_max = 500 * T_L
@@ -143,4 +175,5 @@ def run_scenarios():
 
 
 if __name__ == "__main__":
-    run_scenarios()
+    R_val, d_val, I_val, v_val = get_user_input()
+    run_scenarios(R_val, d_val, I_val, v_val)
