@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Тесты для программы M10. Интерференция.
-
-Запуск:
-    python3 -m unittest -v test_m10_interference.py
-
-Тесты используют только стандартный модуль unittest, поэтому pytest не нужен.
-Проверяются расчётные функции, а не интерактивное меню.
-"""
-
 import math
 import unittest
 
